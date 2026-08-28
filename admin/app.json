@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Blaze Admin",
+    "slug": "learnapp-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "android": { "adaptiveIcon": { "backgroundColor": "#4f46e5" } },
+    "web": { "bundler": "metro" },
+    "extra": {
+      "apiUrl": "http://172.20.10.13:3001"
+    }
+  }
+}
