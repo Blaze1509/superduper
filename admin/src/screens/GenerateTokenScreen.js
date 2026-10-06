@@ -42,7 +42,7 @@ export default function GenerateTokenScreen({ firms, initialFirmId, onTokenGener
   const [selectedFirmId, setSelectedFirmId] = useState(initialFirmId || '');
   const [selectedDuration, setSelectedDuration] = useState(DURATIONS[3]); // Default 24 Hours
   const [username, setUsername] = useState('');
-  
+
   // Searchable Select Modal state for Organizations
   const [firmModalOpen, setFirmModalOpen] = useState(false);
   const [firmSearchText, setFirmSearchText] = useState('');
@@ -317,7 +317,7 @@ export default function GenerateTokenScreen({ firms, initialFirmId, onTokenGener
           </View>
 
           <Text style={s.resultValue}>{resultToken.token}</Text>
-          
+
           {resultToken.expires_at && (
             <Text style={s.resultExpiry}>
               Valid Until: {fmtCompactDate(resultToken.expires_at)}

@@ -1,0 +1,44 @@
+# Advanced Security Implementation Plan
+
+This document outlines the steps required to achieve "Hacker-Proof" security for the mobile application. This plan can be referenced and implemented whenever you are ready.
+
+## Phase 1: Code Obfuscation
+**Goal:** Prevent reverse-engineers from reading your JavaScript bundle (`index.android.bundle`).
+- **Tooling:** Install `javascript-obfuscator` and `metro-plugin-obfuscator`.
+- **Implementation:** Modify `metro.config.js` to run the obfuscator on production builds. This scrambles all variable names, function names, and logic paths into meaningless characters (`_0x4b2a`), rendering the codebase virtually unreadable to anyone who unzips the APK.
+
+## Phase 2: Secure Storage Migration
+**Goal:** Protect sensitive data (tokens, device IDs) stored on the device filesystem.
+- **Tooling:** Replace `@react-native-async-storage/async-storage` with `expo-secure-store`.
+- **Implementation:**
+  - Update `App.js` and all API utilities to read/write tokens using `SecureStore`.
+  - `SecureStore` encrypts the data using the Android Keystore (hardware-backed security) so it cannot be extracted even on rooted devices.
+
+## Phase 3: String & API Path Encryption
+**Goal:** Hide the server URL and API paths from static analysis.
+- **Tooling:** Install `react-native-dotenv` (configured for obfuscation) or manually implement a string decryptor.
+- **Implementation:** Remove plain text URLs like `http://backend.com/api/...`. Instead, store them as encrypted byte arrays that are only decrypted in memory at the exact moment a network request is made.
+
+## Phase 4: API Payload Encryption (Anti-Wiretapping)
+**Goal:** Stop hackers from intercepting your network traffic to see what data the app is sending.
+- **Tooling:** Install `react-native-crypto` (or a similar lightweight AES library).
+- **Implementation:** 
+  - **Backend:** Update `server.js` to accept and return AES-encrypted payloads instead of standard JSON.
+  - **Mobile:** Update `axios` interceptors to stringify the JSON body, encrypt it with AES using a shared secret or dynamically exchanged key, and send it. Incoming responses are decrypted before being processed.
+  - This ensures that tools like Charles Proxy or Wireshark only see random characters, not your data.
+
+## Phase 5: Anti-Tampering & Root Detection (FreeRASP)
+**Goal:** Crash the app immediately if the environment is hostile.
+- **Tooling:** Install `freerasp-react-native`.
+- **Implementation:** 
+  - Integrate FreeRASP in `App.js`.
+  - Configure it to instantly trigger **Panic Mode** or crash if it detects:
+    - The phone is Rooted / Jailbroken.
+    - A debugger or reverse-engineering tool (Frida/Xposed) is attached.
+    - The app is running on an emulator instead of a real phone.
+    - The app's signature was changed (meaning someone modified the APK and re-signed it).
+
+---
+
+> [!TIP]
+> **How to proceed:** When you are ready to begin, simply tell me to **"Start Phase 1 of the Security Plan"** and I will begin the implementation!

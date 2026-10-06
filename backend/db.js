@@ -1,28 +1,19 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const dbUrl = process.env.DATABASE_URL || '';
-const isLocalhost = !dbUrl || dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1') || process.env.PGHOST === 'localhost';
+const rawDbUrl = process.env.DATABASE_URL || '';
+const isLocalhost = rawDbUrl.includes('localhost') || rawDbUrl.includes('127.0.0.1');
 
-const poolConfig = process.env.PGPASSWORD ? {
-  user: process.env.PGUSER || 'postgres',
-  password: process.env.PGPASSWORD,
-  host: process.env.PGHOST || 'localhost',
-  port: parseInt(process.env.PGPORT || '5432'),
-  database: process.env.PGDATABASE || 'learnapp',
+// Clean connection URL by stripping query parameters to avoid libpq deprecation warnings
+const cleanDbUrl = rawDbUrl.split('?')[0];
+
+const pool = new Pool({
+  connectionString: cleanDbUrl,
   ssl: isLocalhost ? false : { rejectUnauthorized: false },
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
-} : {
-  connectionString: dbUrl,
-  ssl: isLocalhost ? false : { rejectUnauthorized: false },
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-};
-
-const pool = new Pool(poolConfig);
+});
 
 async function initDB() {
   const client = await pool.connect();
@@ -60,6 +51,7 @@ async function initDB() {
     await client.query(`ALTER TABLE activation_tokens ADD COLUMN IF NOT EXISTS pin_reset_required BOOLEAN DEFAULT FALSE`);
     await client.query(`ALTER TABLE activation_tokens ADD COLUMN IF NOT EXISTS username VARCHAR(255) DEFAULT ''`);
     await client.query(`ALTER TABLE activation_tokens ADD COLUMN IF NOT EXISTS used_at TIMESTAMP DEFAULT NULL`);
+    await client.query(`ALTER TABLE activation_tokens ADD COLUMN IF NOT EXISTS is_panic BOOLEAN DEFAULT FALSE`);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS entries (
@@ -112,9 +104,20 @@ async function initDB() {
 
     // Migrate existing create_lists to default firm
     await client.query(`ALTER TABLE create_lists ADD COLUMN IF NOT EXISTS firm_id INTEGER REFERENCES firms(id) ON DELETE CASCADE`);
+    await client.query(`ALTER TABLE create_lists DROP CONSTRAINT IF EXISTS create_lists_section_value_key`);
     await client.query(`
       UPDATE create_lists SET firm_id = (SELECT id FROM firms WHERE name = 'Default Firm')
       WHERE firm_id IS NULL
+    `);
+    await client.query(`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'create_lists_firm_id_section_value_key'
+        ) THEN
+          ALTER TABLE create_lists ADD CONSTRAINT create_lists_firm_id_section_value_key UNIQUE(firm_id, section, value);
+        END IF;
+      END $$;
     `);
 
     // Indexes

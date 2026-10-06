@@ -24,16 +24,19 @@ export default function DashboardScreen({ onLogout }) {
       if (f.data && f.data.success) setFirms(f.data.data || []);
       if (t.data && t.data.success) setTokens(t.data.data || []);
     } catch (err) {
-      console.log('Load error:', err);
+      console.log('Load error:', err.response?.status || err.message);
+      if (err.response?.status === 401) {
+        onLogout();
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onLogout]);
 
   useEffect(() => {
     loadData();
     const socketUrl = getApiBaseUrl();
-    const socket = io(socketUrl, { transports: ['websocket'], autoConnect: true });
+    const socket = io(socketUrl, { transports: ['polling', 'websocket'], autoConnect: true });
 
     socket.on('connect', () => setSocketConnected(true));
     socket.on('disconnect', () => setSocketConnected(false));
@@ -155,7 +158,7 @@ export default function DashboardScreen({ onLogout }) {
 const s = StyleSheet.create({
   container: { flex: 1, width: '100%', backgroundColor: '#f8fafc' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' },
-  
+
   // Header spanning 100% width with space-between positioning Sign Out on top right
   header: {
     flexDirection: 'row',

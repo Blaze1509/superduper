@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, Modal, Animated, Platform, Clipboard, Alert
 } from 'react-native';
-import { revokeToken, revertToken, deleteToken, resetTokenPin } from '../api/admin';
+import { revokeToken, revertToken, deleteToken, resetTokenPin, resetPanic } from '../api/admin';
 
 const DURATIONS = [
   { label: '1 Hour', hours: 1 },
@@ -165,6 +165,18 @@ export default function TokensScreen({ tokens, onRefresh }) {
           }
         }
       ]);
+    }
+  };
+
+  const handleResetPanic = async (t) => {
+    try {
+      await resetPanic(t.id);
+      onRefresh();
+      if (Platform.OS === 'web') alert(`Panic mode cleared for token ${t.token}`);
+      else Alert.alert('Success', `Panic mode cleared for token ${t.token}`);
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to reset panic mode';
+      if (Platform.OS === 'web') alert(msg); else Alert.alert('Error', msg);
     }
   };
 
@@ -335,18 +347,23 @@ export default function TokensScreen({ tokens, onRefresh }) {
                       <Text style={s.metaText}>Device ID: {t.device_id === 'REVOKED' ? 'REVOKED' : `${t.device_id.slice(0, 14)}…`}</Text>
                     )}
                   </View>
-
                   <View style={s.tokenActionCol}>
                     <View style={[
                       s.badge,
-                      isUsedActive ? s.badgeInUse : isActive ? s.badgeActive : isRevoked ? s.badgeRevoked : s.badgeExp
+                      t.is_panic ? s.badgePanic : isUsedActive ? s.badgeInUse : isActive ? s.badgeActive : isRevoked ? s.badgeRevoked : s.badgeExp
                     ]}>
                       <Text style={s.badgeText}>
-                        {isUsedActive ? 'IN USE' : isActive ? 'ACTIVE' : isRevoked ? 'REVOKED' : 'EXPIRED'}
+                        {t.is_panic ? 'PANIC MODE' : isUsedActive ? 'IN USE' : isActive ? 'ACTIVE' : isRevoked ? 'REVOKED' : 'EXPIRED'}
                       </Text>
                     </View>
 
                     <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: 4 }}>
+                      {t.is_panic && (
+                        <TouchableOpacity style={s.btnPanicSm} onPress={() => handleResetPanic(t)} activeOpacity={0.8}>
+                          <Text style={s.btnPanicSmText}>Unlock Panic</Text>
+                        </TouchableOpacity>
+                      )}
+
                       <TouchableOpacity style={s.btnPinResetSm} onPress={() => openPinModal(t)} activeOpacity={0.8}>
                         <Text style={s.btnPinResetSmText}>🔑 Reset PIN</Text>
                       </TouchableOpacity>
@@ -612,7 +629,11 @@ const s = StyleSheet.create({
   badgeInUse: { backgroundColor: '#dcfce7' },
   badgeRevoked: { backgroundColor: '#fff1f2' },
   badgeExp: { backgroundColor: '#fef3c7' },
+  badgePanic: { backgroundColor: '#fca5a5' },
   badgeText: { fontSize: 10, fontWeight: '700', color: '#334155', letterSpacing: 0.5 },
+
+  btnPanicSm: { backgroundColor: '#fee2e2', borderWidth: 1, borderColor: '#fca5a5', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 },
+  btnPanicSmText: { color: '#991b1b', fontWeight: '800', fontSize: 11 },
 
   btnPinResetSm: { backgroundColor: '#e0e7ff', borderWidth: 1, borderColor: '#c7d2fe', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 },
   btnPinResetSmText: { color: '#3730a3', fontWeight: '700', fontSize: 11 },

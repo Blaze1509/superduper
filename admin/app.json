@@ -4,11 +4,25 @@
     "slug": "learnapp-admin",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "platforms": ["ios", "android", "web"],
-    "android": { "adaptiveIcon": { "backgroundColor": "#4f46e5" } },
-    "web": { "bundler": "metro" },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
     "extra": {
-      "apiUrl": "http://172.20.10.13:3001"
+      "apiUrl": "https://hackbackend-production.up.railway.app"
     }
   }
 }
